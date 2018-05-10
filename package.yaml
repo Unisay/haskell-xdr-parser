@@ -15,6 +15,7 @@ category:            parsing
 description:         Please see the README on GitHub at <https://github.com/unisay/xdr#readme>
 
 default-extensions:
+- NoImplicitPrelude
 - OverloadedStrings
 - EmptyCase
 - FlexibleContexts
@@ -36,8 +37,11 @@ ghc-options:
 
 dependencies:
 - base >= 4.7 && < 5
-- protolude
+- containers
 - megaparsec
+- protolude
+- semigroups
+- text
 
 library:
   source-dirs: src

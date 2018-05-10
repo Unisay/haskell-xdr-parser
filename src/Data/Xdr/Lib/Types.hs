@@ -1,4 +1,4 @@
-module Data.Xdr.Types
+module Data.Xdr.Lib.Types
   ( SignedInt
   , UnsignedInt
   , SignedHyper
