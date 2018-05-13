@@ -1,0 +1,11 @@
+[ Right (ConstantDef (Identifier "MAXUSERNAME") (DecConstant 32))
+, Right (ConstantDef (Identifier "MAXFILELEN") (DecConstant 65535))
+, Right (ConstantDef (Identifier "MAXNAMELEN") (DecConstant 255))
+, Left
+    (TypeDefEnum
+       (Identifier "filekind")
+       (( Identifier "TEXT" , Left (DecConstant 0) ) :|
+          [ ( Identifier "DATA" , Left (DecConstant 1) )
+          , ( Identifier "EXEC" , Left (DecConstant 2) )
+          ]))
+]

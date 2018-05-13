@@ -1,80 +1,228 @@
-module Data.Xdr.Parser where
+module Data.Xdr.Parser
+  ( specification
+  , parseFile
+  ) where
 
-import qualified Data.Text                  as T
+import           Control.Arrow   (left)
+import qualified Data.Text       as T
+import           Data.Xdr.Lexer  (Parser)
+import qualified Data.Xdr.Lexer  as L
 import           Data.Xdr.Spec
 import qualified Prelude
-import           Protolude                  hiding (check, many, try)
+import           Protolude       hiding (check, many, try)
 import           Text.Megaparsec
-import           Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
 
-type Parser = Parsec Void Text
 
--- | Space consumer
-spaceConsumer :: Parser ()
-spaceConsumer = L.space space1 lineComment blockComment
+parseFile :: FilePath -> IO (Either Text Specification)
+parseFile path = left show . runParser specification path <$> readFile path
+
+specification :: Parser Specification
+specification = sepEndBy definition L.semicolon
+
+definition :: Parser Definition
+definition = eitherP typeDef constantDef
+
+typeDef :: Parser TypeDef
+typeDef = choice
+  [ typeDef'
+  , typeDefEnum
+  , typeDefStruct
+  , typeDefUnion
+  ] where
+
+  typeDef' :: Parser TypeDef
+  typeDef' = TypeDef
+    <$> (L.reserved "typedef" *> declaration')
+
+  typeDefEnum :: Parser TypeDef
+  typeDefEnum = TypeDefEnum
+    <$> (L.reserved "enum" *> identifier)
+    <*> (enumBody <* L.semicolon)
+
+  typeDefStruct :: Parser TypeDef
+  typeDefStruct =
+    TypeDefStruct
+      <$> (L.reserved "struct" *> identifier)
+      <*> (structBody <* L.semicolon)
+
+  typeDefUnion :: Parser TypeDef
+  typeDefUnion =
+    TypeDefUnion
+      <$> (L.reserved "union" *> identifier)
+      <*> (unionBody <* L.semicolon)
+
+enumBody :: Parser EnumBody
+enumBody = L.braces $ L.nonEmptyList L.comma idValue
   where
-  lineComment  = L.skipLineComment "//"
-  blockComment = L.skipBlockComment "/*" "*/"
+  idValue :: Parser (Identifier, Value)
+  idValue = (,)
+    <$> identifier <* L.symbol "="
+    <*> value
 
--- | Consume whitespace after every lexeme automatically, but not before it.
-lexeme :: Parser a -> Parser a
-lexeme = L.lexeme spaceConsumer
+structBody :: Parser StructBody
+structBody = L.braces $ L.nonEmptyLines declaration'
 
-symbol :: Text -> Parser Text
-symbol = L.symbol spaceConsumer
-
--- (3) An identifier is a letter followed by an optional sequence of letters,
--- digits, or underbar (’_’). The case of identifiers is not ignored.
-identifier :: Parser Identifier
-identifier = Identifier <$> (lexeme . try) (p >>= check)
+unionBody :: Parser UnionBody
+unionBody = UnionBody
+  <$> unionDefault
+  <*> unionDiscriminant
+  <*> unionArms
   where
-    p = T.cons
-      <$> letterChar
-      <*> fmap T.pack (many alphaNumChar)
-    check x =
-      if x `elem` reservedWords
-      then Prelude.fail $ "keyword " ++ show x ++ " cannot be an identifier"
-      else pure x
 
-reservedWords :: [Text]
-reservedWords =
-  [ "bool"
-  , "case"
-  , "const"
-  , "default"
-  , "double"
-  , "quadruple"
-  , "enum"
-  , "float"
-  , "hyper"
-  , "int"
-  , "opaque"
-  , "string"
-  , "struct"
-  , "switch"
-  , "typedef"
-  , "union"
-  , "unsigned"
-  , "void"
-  , "program"
-  , "version"
+  unionDefault :: Parser (Maybe Declaration)
+  unionDefault = optional $
+    L.reserved "default" >> L.colon *> declaration'
+
+  unionDiscriminant :: Parser Declaration
+  unionDiscriminant = L.reserved "switch" *> L.parens declaration
+
+  unionArms :: Parser (NonEmpty CaseSpec)
+  unionArms = L.braces $ L.nonEmptyLines $
+    CaseSpec <$> caseSpecValues <*> declaration'
+
+  caseSpecValues :: Parser (NonEmpty Value)
+  caseSpecValues = L.nonEmptyLines $
+    L.reserved "case" *> value <* L.colon
+
+declaration :: Parser Declaration
+declaration = choice
+  [ declarationSingle
+  , declarationArrayFixLen
+  , declarationArrayVarLen
+  , declarationOpaqueFixLen
+  , declarationOpaqueVarLen
+  , declarationString
+  , declarationOptional
+  , declarationVoid
+  ] where
+
+  declarationSingle :: Parser Declaration
+  declarationSingle = DeclarationSingle
+    <$> typeSpecifier
+    <*> identifier
+
+  declarationArrayFixLen :: Parser Declaration
+  declarationArrayFixLen = DeclarationArrayFixLen
+    <$> typeSpecifier
+    <*> identifier
+    <*> L.brackets value
+
+  declarationArrayVarLen :: Parser Declaration
+  declarationArrayVarLen = DeclarationArrayVarLen
+    <$> typeSpecifier
+    <*> identifier
+    <*> L.angles (optional value)
+
+  declarationOpaqueFixLen :: Parser Declaration
+  declarationOpaqueFixLen = DeclarationOpaqueFixLen
+    <$> (L.reserved "opaque" *> identifier)
+    <*> L.brackets value
+
+  declarationOpaqueVarLen :: Parser Declaration
+  declarationOpaqueVarLen = DeclarationOpaqueVarLen
+    <$> (L.reserved "opaque" *> identifier)
+    <*> L.angles (optional value)
+
+  declarationString :: Parser Declaration
+  declarationString = DeclarationString
+    <$> (L.reserved "string" *> identifier)
+    <*> L.angles (optional value)
+
+  declarationOptional :: Parser Declaration
+  declarationOptional = DeclarationOptional
+    <$> (typeSpecifier <* L.symbol "*")
+    <*> identifier
+
+  declarationVoid :: Parser Declaration
+  declarationVoid = DeclarationVoid <$ L.reserved "void"
+
+declaration' :: Parser Declaration
+declaration' = declaration <* L.semicolon
+
+typeSpecifier :: Parser TypeSpecifier
+typeSpecifier = choice
+  [ typeUnsignedInt
+  , typeInt
+  , typeUnsignedHyper
+  , typeHyper
+  , typeFloat
+  , typeDouble
+  , typeQuadruple
+  , typeBool
+  , typeEnum
+  , typeStruct
+  , typeUnion
+  , typeIdentifier
+  ] where
+
+  unsigned = L.reserved "unsigned"
+
+  typeUnsignedInt :: Parser TypeSpecifier
+  typeUnsignedInt = TypeUnsignedInt
+    <$ (unsigned >> L.reserved "int")
+
+  typeInt :: Parser TypeSpecifier
+  typeInt = TypeInt <$ L.reserved "int"
+
+  typeUnsignedHyper :: Parser TypeSpecifier
+  typeUnsignedHyper = TypeUnsignedHyper
+    <$ (unsigned >> L.reserved "hyper")
+
+  typeHyper :: Parser TypeSpecifier
+  typeHyper = TypeHyper <$ L.reserved "hyper"
+
+  typeFloat :: Parser TypeSpecifier
+  typeFloat = TypeFloat <$ L.reserved "float"
+
+  typeDouble :: Parser TypeSpecifier
+  typeDouble = TypeDouble <$ L.reserved "double"
+
+  typeQuadruple :: Parser TypeSpecifier
+  typeQuadruple = TypeQuadruple <$ L.reserved "quadruple"
+
+  typeBool :: Parser TypeSpecifier
+  typeBool = TypeBool <$ L.reserved "bool"
+
+  typeEnum :: Parser TypeSpecifier
+  typeEnum = TypeEnum <$> (L.reserved "enum" *> enumBody)
+
+  typeStruct :: Parser TypeSpecifier
+  typeStruct = TypeStruct <$> (L.reserved "struct" *> structBody)
+
+  typeUnion :: Parser TypeSpecifier
+  typeUnion = TypeUnion <$> (L.reserved "union" *> unionBody)
+
+  typeIdentifier :: Parser TypeSpecifier
+  typeIdentifier = TypeIdentifier <$> identifier
+
+value :: Parser Value
+value = eitherP constant identifier
+
+constantDef :: Parser ConstantDef
+constantDef = ConstantDef
+  <$> (L.reserved "const" *> identifier)
+  <*> (L.symbol "=" *> constant)
+
+constant :: Parser Constant
+constant = choice
+  [ decimalConstant
+  , hexadecimalConstant
+  , octalConstant
   ]
 
--- A decimal constant expresses a number in base 10 and is a
--- sequence of one or more decimal digits, where the first digit is not
--- a zero, and is optionally preceded by a minus-sign (’-’).
+identifier :: Parser Identifier
+identifier = Identifier . T.pack <$> (L.lexeme . try) (p >>= check)
+ where
+  p = (:) <$> L.letterChar <*> many L.alphaNumChar
+  check x = if x `elem` L.reservedWords
+    then Prelude.fail $ "keyword " ++ show x ++ " cannot be an identifier"
+    else pure x
+
 decimalConstant :: Parser Constant
-decimalConstant = DecConstant <$> L.signed spaceConsumer (lexeme L.decimal)
+decimalConstant = DecConstant <$> L.signed L.space (L.lexeme L.decimal)
 
--- An octal constant expresses a number in base 8, always leads with digit 0,
--- and is a sequence of one or more octal digits (’0’, ’1’, ’2’, ’3’, ’4’, ’5’, ’6’, ’7’).
 octalConstant :: Parser Constant
-octalConstant = OctConstant <$> (char '0' >> L.octal)
+octalConstant = OctConstant <$> (L.char '0' >> L.octal)
 
--- A hexadecimal constant expresses a number in base 16, and must be
--- preceded by ’0x’, followed by one or hexadecimal digits (’A’, ’B’,
--- ’C’, ’D’, E’, ’F’, ’a’, ’b’, ’c’, ’d’, ’e’, ’f’, ’0’, ’1’, ’2’, ’3’,
--- ’4’, ’5’, ’6’, ’7’, ’8’, ’9’).
 hexadecimalConstant :: Parser Constant
-hexadecimalConstant = HexConstant <$> (char '0' >> char' 'x' >> L.hexadecimal)
+hexadecimalConstant = HexConstant <$> (L.char '0' >> L.char' 'x' >> L.hexadecimal)

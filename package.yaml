@@ -36,11 +36,10 @@ ghc-options:
 - -Wredundant-constraints
 
 dependencies:
-- base >= 4.7 && < 5
+- base >= 4.9 && < 5
 - containers
 - megaparsec
 - protolude
-- semigroups
 - text
 
 library:
@@ -59,7 +58,7 @@ library:
 
 tests:
   xdr-test:
-    main:                Spec.hs
+    main:                Main.hs
     source-dirs:         test
     ghc-options:
     - -threaded
@@ -67,3 +66,10 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - xdr
+    - base >= 4.7 && < 5
+    - bytestring
+    - filepath
+    - protolude
+    - tasty
+    - tasty-golden
+    - pretty-show
