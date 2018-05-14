@@ -11,7 +11,7 @@ module Data.Xdr.Lexer
   , nonEmptyLines
   , nonEmptyList
   , parens
-  , reserved
+  , rword
   , reservedWords
   , symbol
   , space
@@ -19,7 +19,7 @@ module Data.Xdr.Lexer
   ) where
 
 import qualified Prelude
-import           Protolude                  hiding (many)
+import           Protolude                  hiding (many, try)
 import           Text.Megaparsec
 import           Text.Megaparsec.Char       hiding (space)
 import           Text.Megaparsec.Char.Lexer hiding (lexeme, space, symbol)
@@ -96,5 +96,5 @@ reservedWords =
   , "void"
   ]
 
-reserved :: Text -> Parser ()
-reserved w = string w *> notFollowedBy alphaNumChar *> space
+rword :: Text -> Parser ()
+rword w = (lexeme . try) (string w *> notFollowedBy alphaNumChar)

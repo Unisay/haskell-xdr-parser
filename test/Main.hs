@@ -19,11 +19,11 @@ goldenTests = do
     [ goldenVsFile
         (takeBaseName xFile)
         goldenFile
-        textFile
-        (parseXdr xFile textFile)
+        actualFile
+        (parseXdr xFile actualFile)
     | xFile <- xFiles
-    , let goldenFile = replaceExtension xFile ".golden"
-          textFile   = replaceExtension xFile ".txt"
+    , let goldenFile = replaceExtension xFile ".golden.txt"
+          actualFile = replaceExtension xFile ".actual.txt"
     ]
 
 parseXdr :: FilePath -> FilePath -> IO ()

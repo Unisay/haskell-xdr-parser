@@ -17,7 +17,7 @@ parseFile :: FilePath -> IO (Either Text Specification)
 parseFile path = left show . runParser specification path <$> readFile path
 
 specification :: Parser Specification
-specification = L.space *> sepEndBy definition L.space
+specification = between L.space eof $ sepEndBy definition L.space
 
 definition :: Parser Definition
 definition = eitherP typeDef constantDef
@@ -32,23 +32,23 @@ typeDef = choice
 
   typeDef' :: Parser TypeDef
   typeDef' = TypeDef
-    <$> (L.reserved "typedef" *> declaration')
+    <$> (L.rword "typedef" *> declaration')
 
   typeDefEnum :: Parser TypeDef
   typeDefEnum = TypeDefEnum
-    <$> (L.reserved "enum" *> identifier)
+    <$> (L.rword "enum" *> identifier)
     <*> (enumBody <* L.semicolon)
 
   typeDefStruct :: Parser TypeDef
   typeDefStruct =
     TypeDefStruct
-      <$> (L.reserved "struct" *> identifier)
+      <$> (L.rword "struct" *> identifier)
       <*> (structBody <* L.semicolon)
 
   typeDefUnion :: Parser TypeDef
   typeDefUnion =
     TypeDefUnion
-      <$> (L.reserved "union" *> identifier)
+      <$> (L.rword "union" *> identifier)
       <*> (unionBody <* L.semicolon)
 
 enumBody :: Parser EnumBody
@@ -70,10 +70,10 @@ unionBody = body
   body discr (arms, def) = UnionBody discr arms def
 
   unionDefault :: Parser (Maybe Declaration)
-  unionDefault = optional $ L.reserved "default" >> L.colon *> declaration'
+  unionDefault = optional $ L.rword "default" >> L.colon *> declaration'
 
   unionDiscriminant :: Parser Declaration
-  unionDiscriminant = L.reserved "switch" *> L.parens declaration
+  unionDiscriminant = L.rword "switch" *> L.parens declaration
 
   unionArms :: Parser (NonEmpty CaseSpec)
   unionArms = L.nonEmptyLines $
@@ -81,7 +81,7 @@ unionBody = body
 
   caseSpecValues :: Parser (NonEmpty Value)
   caseSpecValues = L.nonEmptyLines $
-    L.reserved "case" *> value <* L.colon
+    L.rword "case" *> value <* L.colon
 
 declaration :: Parser Declaration
 declaration = choice
@@ -114,17 +114,17 @@ declaration = choice
 
   declarationOpaqueFixLen :: Parser Declaration
   declarationOpaqueFixLen = DeclarationOpaqueFixLen
-    <$> lookAhead (L.reserved "opaque" *> identifier)
+    <$> lookAhead (L.rword "opaque" *> identifier)
     <*> L.brackets value
 
   declarationOpaqueVarLen :: Parser Declaration
   declarationOpaqueVarLen = DeclarationOpaqueVarLen
-    <$> (L.reserved "opaque" *> identifier)
+    <$> (L.rword "opaque" *> identifier)
     <*> L.angles (optional value)
 
   declarationString :: Parser Declaration
   declarationString = DeclarationString
-    <$> (L.reserved "string" *> identifier)
+    <$> (L.rword "string" *> identifier)
     <*> L.angles (optional value)
 
   declarationOptional :: Parser Declaration
@@ -133,7 +133,7 @@ declaration = choice
     <*> identifier
 
   declarationVoid :: Parser Declaration
-  declarationVoid = DeclarationVoid <$ L.reserved "void"
+  declarationVoid = DeclarationVoid <$ L.rword "void"
 
 declaration' :: Parser Declaration
 declaration' = declaration <* L.semicolon
@@ -154,42 +154,42 @@ typeSpecifier = choice
   , typeIdentifier
   ] where
 
-  unsigned = L.reserved "unsigned"
+  unsigned = L.rword "unsigned"
 
   typeUnsignedInt :: Parser TypeSpecifier
   typeUnsignedInt = TypeUnsignedInt
-    <$ (unsigned >> L.reserved "int")
+    <$ (unsigned >> L.rword "int")
 
   typeInt :: Parser TypeSpecifier
-  typeInt = TypeInt <$ L.reserved "int"
+  typeInt = TypeInt <$ L.rword "int"
 
   typeUnsignedHyper :: Parser TypeSpecifier
   typeUnsignedHyper = TypeUnsignedHyper
-    <$ (unsigned >> L.reserved "hyper")
+    <$ (unsigned >> L.rword "hyper")
 
   typeHyper :: Parser TypeSpecifier
-  typeHyper = TypeHyper <$ L.reserved "hyper"
+  typeHyper = TypeHyper <$ L.rword "hyper"
 
   typeFloat :: Parser TypeSpecifier
-  typeFloat = TypeFloat <$ L.reserved "float"
+  typeFloat = TypeFloat <$ L.rword "float"
 
   typeDouble :: Parser TypeSpecifier
-  typeDouble = TypeDouble <$ L.reserved "double"
+  typeDouble = TypeDouble <$ L.rword "double"
 
   typeQuadruple :: Parser TypeSpecifier
-  typeQuadruple = TypeQuadruple <$ L.reserved "quadruple"
+  typeQuadruple = TypeQuadruple <$ L.rword "quadruple"
 
   typeBool :: Parser TypeSpecifier
-  typeBool = TypeBool <$ L.reserved "bool"
+  typeBool = TypeBool <$ L.rword "bool"
 
   typeEnum :: Parser TypeSpecifier
-  typeEnum = TypeEnum <$> (L.reserved "enum" *> enumBody)
+  typeEnum = TypeEnum <$> (L.rword "enum" *> enumBody)
 
   typeStruct :: Parser TypeSpecifier
-  typeStruct = TypeStruct <$> (L.reserved "struct" *> structBody)
+  typeStruct = TypeStruct <$> (L.rword "struct" *> structBody)
 
   typeUnion :: Parser TypeSpecifier
-  typeUnion = TypeUnion <$> (L.reserved "union" *> unionBody)
+  typeUnion = TypeUnion <$> (L.rword "union" *> unionBody)
 
   typeIdentifier :: Parser TypeSpecifier
   typeIdentifier = TypeIdentifier <$> identifier
@@ -199,7 +199,7 @@ value = eitherP constant identifier
 
 constantDef :: Parser ConstantDef
 constantDef = ConstantDef
-  <$> (L.reserved "const" *> identifier)
+  <$> (L.rword "const" *> identifier)
   <*> (L.symbol "=" *> constant <* L.semicolon)
 
 constant :: Parser Constant
