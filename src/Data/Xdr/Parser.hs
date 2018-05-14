@@ -212,7 +212,7 @@ constant = choice
 identifier :: Parser Identifier
 identifier = Identifier . T.pack <$> (L.lexeme . try) (p >>= check)
  where
-  p = (:) <$> L.letterChar <*> many L.alphaNumChar
+  p = (:) <$> L.letterChar <*> many L.alphaNumChar <?> "identifier"
   check x = if x `elem` L.reservedWords
     then Prelude.fail $ "keyword " <> show x <> " cannot be an identifier"
     else pure x
