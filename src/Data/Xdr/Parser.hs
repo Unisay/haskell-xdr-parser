@@ -17,7 +17,7 @@ parseFile :: FilePath -> IO (Either Text Specification)
 parseFile path = left show . runParser specification path <$> readFile path
 
 specification :: Parser Specification
-specification = sepEndBy definition L.semicolon
+specification = L.space *> sepEndBy definition L.space
 
 definition :: Parser Definition
 definition = eitherP typeDef constantDef
@@ -63,21 +63,20 @@ structBody :: Parser StructBody
 structBody = L.braces $ L.nonEmptyLines declaration'
 
 unionBody :: Parser UnionBody
-unionBody = UnionBody
-  <$> unionDefault
-  <*> unionDiscriminant
-  <*> unionArms
+unionBody = body
+  <$> unionDiscriminant
+  <*> L.braces ((,) <$> unionArms <*> unionDefault)
   where
+  body discr (arms, def) = UnionBody discr arms def
 
   unionDefault :: Parser (Maybe Declaration)
-  unionDefault = optional $
-    L.reserved "default" >> L.colon *> declaration'
+  unionDefault = optional $ L.reserved "default" >> L.colon *> declaration'
 
   unionDiscriminant :: Parser Declaration
   unionDiscriminant = L.reserved "switch" *> L.parens declaration
 
   unionArms :: Parser (NonEmpty CaseSpec)
-  unionArms = L.braces $ L.nonEmptyLines $
+  unionArms = L.nonEmptyLines $
     CaseSpec <$> caseSpecValues <*> declaration'
 
   caseSpecValues :: Parser (NonEmpty Value)
@@ -115,7 +114,7 @@ declaration = choice
 
   declarationOpaqueFixLen :: Parser Declaration
   declarationOpaqueFixLen = DeclarationOpaqueFixLen
-    <$> (L.reserved "opaque" *> identifier)
+    <$> lookAhead (L.reserved "opaque" *> identifier)
     <*> L.brackets value
 
   declarationOpaqueVarLen :: Parser Declaration
@@ -201,7 +200,7 @@ value = eitherP constant identifier
 constantDef :: Parser ConstantDef
 constantDef = ConstantDef
   <$> (L.reserved "const" *> identifier)
-  <*> (L.symbol "=" *> constant)
+  <*> (L.symbol "=" *> constant <* L.semicolon)
 
 constant :: Parser Constant
 constant = choice
@@ -215,7 +214,7 @@ identifier = Identifier . T.pack <$> (L.lexeme . try) (p >>= check)
  where
   p = (:) <$> L.letterChar <*> many L.alphaNumChar
   check x = if x `elem` L.reservedWords
-    then Prelude.fail $ "keyword " ++ show x ++ " cannot be an identifier"
+    then Prelude.fail $ "keyword " <> show x <> " cannot be an identifier"
     else pure x
 
 decimalConstant :: Parser Constant

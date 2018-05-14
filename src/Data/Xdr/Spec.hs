@@ -47,9 +47,9 @@ type EnumBody = NonEmpty (Identifier, Value)
 type StructBody = NonEmpty Declaration
 
 data UnionBody = UnionBody
-  { unionDefault      :: Maybe Declaration
-  , unionDiscriminant :: Declaration
+  { unionDiscriminant :: Declaration
   , unionArms         :: NonEmpty CaseSpec
+  , unionDefault      :: Maybe Declaration
   }
   deriving (Eq, Show)
 

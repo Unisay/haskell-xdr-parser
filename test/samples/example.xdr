@@ -22,6 +22,7 @@ case DATA:
    string creator<MAXNAMELEN>;     /* data creator         */
 case EXEC:
    string interpretor<MAXNAMELEN>; /* program interpretor  */
+default: foo bar;
 };
 
 /*
