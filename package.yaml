@@ -34,11 +34,13 @@ ghc-options:
 - -Wincomplete-record-updates
 - -Wincomplete-uni-patterns
 - -Wredundant-constraints
+- -fprint-expanded-synonyms
 
 dependencies:
 - base >= 4.9 && < 5
 - containers
 - megaparsec
+- mtl
 - protolude
 - text
 

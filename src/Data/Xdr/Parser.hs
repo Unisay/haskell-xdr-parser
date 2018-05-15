@@ -5,16 +5,23 @@ module Data.Xdr.Parser
 
 import           Control.Arrow   (left)
 import qualified Data.Text       as T
-import           Data.Xdr.Lexer  (Parser)
 import qualified Data.Xdr.Lexer  as L
 import           Data.Xdr.Spec
 import qualified Prelude
 import           Protolude       hiding (check, many, try)
-import           Text.Megaparsec
+import           Text.Megaparsec hiding (State)
 
+type Scope = Text
+type S = StateT (Map Scope [Identifier]) IO
+type Parser = ParsecT Void Text S
 
 parseFile :: FilePath -> IO (Either Text Specification)
-parseFile path = left show . runParser specification path <$> readFile path
+parseFile =  b . c
+  where
+  b :: S (Either (ParseError (Token Text) Void) Specification) -> IO (Either Text Specification)
+  b s = left show <$> evalStateT s mempty
+  c :: FilePath -> S (Either (ParseError (Token Text) Void) Specification)
+  c path = liftIO (readFile path) >>= runParserT specification path
 
 specification :: Parser Specification
 specification = between L.space eof $ sepEndBy definition L.space

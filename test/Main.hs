@@ -6,7 +6,6 @@ import           Protolude
 import           System.FilePath    (replaceExtension, takeBaseName)
 import           Test.Tasty
 import           Test.Tasty.Golden
-import           Text.Megaparsec
 import           Text.Show.Pretty
 
 main :: IO ()
@@ -28,7 +27,6 @@ goldenTests = do
 
 parseXdr :: FilePath -> FilePath -> IO ()
 parseXdr source target = do
-  xdr <- readFile source
-  txt <- either (fail . show) (pure . ppShow) $
-    runParser specification source xdr
+  res <- parseFile source
+  txt <- either (fail . show) (pure . ppShow) res
   writeFile target (toS txt)
