@@ -18,7 +18,6 @@ module Data.Xdr.Lexer
   ) where
 
 import           Data.Xdr.Parsing
-import qualified Prelude
 import           Protolude                  hiding (many, try)
 import           Text.Megaparsec            hiding (State)
 import           Text.Megaparsec.Char       hiding (space)
@@ -72,7 +71,7 @@ nonEmptyLines :: Parsing p => p a -> p (NonEmpty a)
 nonEmptyLines = nonEmptyList space
 {-# INLINE nonEmptyLines #-}
 
-reservedWords :: [Prelude.String]
+reservedWords :: [Text]
 reservedWords =
   [ "bool"
   , "case"
@@ -95,4 +94,4 @@ reservedWords =
   ]
 
 rword :: Parsing p => Text -> p ()
-rword w = (lexeme . try) (string w *> notFollowedBy alphaNumChar)
+rword w = lexeme . try $ string w *> notFollowedBy alphaNumChar

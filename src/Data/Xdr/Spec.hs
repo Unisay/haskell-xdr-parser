@@ -6,7 +6,11 @@ import           Protolude
 
 newtype Identifier
   = Identifier Text
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
+
+newtype IdentifierRef
+  = IdentifierRef Text
+  deriving (Eq, Ord, Show)
 
 data Declaration
   = DeclarationSingle TypeSpecifier Identifier
@@ -19,17 +23,25 @@ data Declaration
   | DeclarationVoid
   deriving (Eq, Show)
 
-type Value = Either Constant Identifier
+data Discriminant
+  = DiscriminantInt IdentifierRef
+  | DiscriminantUInt IdentifierRef
+  | DiscriminantBool IdentifierRef
+  | DiscriminantEnum IdentifierRef
+  | Discriminant IdentifierRef
+  deriving (Eq, Show)
+
+type Value = Either Constant IdentifierRef
 
 data Constant
   = DecConstant Integer
   | HexConstant Integer
   | OctConstant Integer
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data TypeSpecifier
   = TypeInt
-  | TypeUnsignedInt
+  | TypeUInt
   | TypeHyper
   | TypeUnsignedHyper
   | TypeFloat
@@ -47,7 +59,7 @@ type EnumBody = NonEmpty (Identifier, Value)
 type StructBody = NonEmpty Declaration
 
 data UnionBody = UnionBody
-  { unionDiscriminant :: Declaration
+  { unionDiscriminant :: Discriminant
   , unionArms         :: NonEmpty CaseSpec
   , unionDefault      :: Maybe Declaration
   }

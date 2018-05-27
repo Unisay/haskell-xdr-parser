@@ -14,23 +14,23 @@
        UnionBody
          { unionDiscriminant =
              DeclarationSingle
-               (TypeIdentifier (Identifier "filekind")) (Identifier "kind")
+               (TypeIdentifier (IdentifierRef "filekind")) (Identifier "kind")
          , unionArms =
              CaseSpec
-               { caseSpecValues = Right (Identifier "TEXT") :| []
+               { caseSpecValues = Right (IdentifierRef "TEXT") :| []
                , caseSpecDeclaration = DeclarationVoid
                } :|
                [ CaseSpec
-                   { caseSpecValues = Right (Identifier "DATA") :| []
+                   { caseSpecValues = Right (IdentifierRef "DATA") :| []
                    , caseSpecDeclaration =
                        DeclarationString
-                         (Identifier "creator") (Just (Right (Identifier "MAXNAMELEN")))
+                         (Identifier "creator") (Just (Right (IdentifierRef "MAXNAMELEN")))
                    }
                , CaseSpec
-                   { caseSpecValues = Right (Identifier "EXEC") :| []
+                   { caseSpecValues = Right (IdentifierRef "EXEC") :| []
                    , caseSpecDeclaration =
                        DeclarationString
-                         (Identifier "interpretor") (Just (Right (Identifier "MAXNAMELEN")))
+                         (Identifier "interpretor") (Just (Right (IdentifierRef "MAXNAMELEN")))
                    }
                ]
          , unionDefault =

@@ -4,25 +4,23 @@ module Data.Xdr.Parser
   , runParser
   ) where
 
-import           Control.Arrow    (left)
+import           Data.List        (lookup)
 import qualified Data.Text        as T
 import qualified Data.Xdr.Lexer   as L
 import           Data.Xdr.Parsing
 import           Data.Xdr.Spec
-import qualified Prelude
-import           Protolude        hiding (check, many, try)
+import           Protolude        hiding (many, try)
 import           Text.Megaparsec
 
-parseFile :: FilePath -> IO (Either Text Specification)
-parseFile path = readFile path
-             <&> runParser spec path
-             <&> left show
-  where
-    spec :: Parser Specification
-    spec = evalStateT specification initialState
+parseFile :: FilePath -> IO (Either ParserError Specification)
+parseFile path = do
+  raw <- readFile path
+  let parser = runStatefulParser specification
+  forM (runParser parser path raw) $ \(sp, finalState) ->
+    print finalState $> sp
 
-    initialState :: ParserState
-    initialState = mempty
+runStatefulParser :: StatefulParser a -> Parser (a, ParserState)
+runStatefulParser = flip runStateT mempty
 
 specification :: Parsing p => p Specification
 specification = between L.space eof $ sepEndBy definition L.space
@@ -72,7 +70,7 @@ structBody = L.braces $ L.nonEmptyLines declaration'
 
 unionBody :: Parsing p => p UnionBody
 unionBody = body
-  <$> unionDiscriminant
+  <$> (L.rword "switch" *> L.parens unionDiscriminant)
   <*> L.braces ((,) <$> unionArms <*> unionDefault)
   where
   body discr (arms, def) = UnionBody discr arms def
@@ -80,8 +78,20 @@ unionBody = body
   unionDefault :: Parsing p => p (Maybe Declaration)
   unionDefault = optional $ L.rword "default" >> L.colon *> declaration'
 
-  unionDiscriminant :: Parsing p => p Declaration
-  unionDiscriminant = L.rword "switch" *> L.parens declaration
+  unionDiscriminant :: Parsing p => p Discriminant
+  unionDiscriminant = choice
+    [ DiscriminantInt  <$> (typeInt  *> typedIdRef (== TypeInt))
+    , DiscriminantUInt <$> (typeUInt *> typedIdRef (== TypeUInt))
+    , DiscriminantBool <$> (typeBool *> typedIdRef (== TypeBool))
+    , DiscriminantEnum <$> (typeEnum *> typedIdRef isEnum)
+    ] where
+
+    isEnum (TypeEnum _) = True
+    isEnum _            = False
+
+    typedIdRef :: Parsing p => (TypeSpecifier -> Bool) -> p IdentifierRef
+    typedIdRef p = try $
+      identifierRef >>= notImplemented
 
   unionArms :: Parsing p => p (NonEmpty CaseSpec)
   unionArms = L.nonEmptyLines $
@@ -148,7 +158,7 @@ declaration' = declaration <* L.semicolon
 
 typeSpecifier :: Parsing p => p TypeSpecifier
 typeSpecifier = choice
-  [ typeUnsignedInt
+  [ typeUInt
   , typeInt
   , typeUnsignedHyper
   , typeHyper
@@ -160,51 +170,51 @@ typeSpecifier = choice
   , typeStruct
   , typeUnion
   , typeIdentifier
-  ] where
+  ]
 
-  unsigned :: Parsing p => p ()
-  unsigned = L.rword "unsigned"
+unsigned :: Parsing p => p ()
+unsigned = L.rword "unsigned"
 
-  typeUnsignedInt :: Parsing p => p TypeSpecifier
-  typeUnsignedInt = TypeUnsignedInt
-    <$ (unsigned >> L.rword "int")
+typeUInt :: Parsing p => p TypeSpecifier
+typeUInt = TypeUInt
+  <$ (unsigned >> L.rword "int")
 
-  typeInt :: Parsing p => p TypeSpecifier
-  typeInt = TypeInt <$ L.rword "int"
+typeInt :: Parsing p => p TypeSpecifier
+typeInt = TypeInt <$ L.rword "int"
 
-  typeUnsignedHyper :: Parsing p => p TypeSpecifier
-  typeUnsignedHyper = TypeUnsignedHyper
-    <$ (unsigned >> L.rword "hyper")
+typeUnsignedHyper :: Parsing p => p TypeSpecifier
+typeUnsignedHyper = TypeUnsignedHyper
+  <$ (unsigned >> L.rword "hyper")
 
-  typeHyper :: Parsing p => p TypeSpecifier
-  typeHyper = TypeHyper <$ L.rword "hyper"
+typeHyper :: Parsing p => p TypeSpecifier
+typeHyper = TypeHyper <$ L.rword "hyper"
 
-  typeFloat :: Parsing p => p TypeSpecifier
-  typeFloat = TypeFloat <$ L.rword "float"
+typeFloat :: Parsing p => p TypeSpecifier
+typeFloat = TypeFloat <$ L.rword "float"
 
-  typeDouble :: Parsing p => p TypeSpecifier
-  typeDouble = TypeDouble <$ L.rword "double"
+typeDouble :: Parsing p => p TypeSpecifier
+typeDouble = TypeDouble <$ L.rword "double"
 
-  typeQuadruple :: Parsing p => p TypeSpecifier
-  typeQuadruple = TypeQuadruple <$ L.rword "quadruple"
+typeQuadruple :: Parsing p => p TypeSpecifier
+typeQuadruple = TypeQuadruple <$ L.rword "quadruple"
 
-  typeBool :: Parsing p => p TypeSpecifier
-  typeBool = TypeBool <$ L.rword "bool"
+typeBool :: Parsing p => p TypeSpecifier
+typeBool = TypeBool <$ L.rword "bool"
 
-  typeEnum :: Parsing p => p TypeSpecifier
-  typeEnum = TypeEnum <$> (L.rword "enum" *> enumBody)
+typeEnum :: Parsing p => p TypeSpecifier
+typeEnum = TypeEnum <$> (L.rword "enum" *> enumBody)
 
-  typeStruct :: Parsing p => p TypeSpecifier
-  typeStruct = TypeStruct <$> (L.rword "struct" *> structBody)
+typeStruct :: Parsing p => p TypeSpecifier
+typeStruct = TypeStruct <$> (L.rword "struct" *> structBody)
 
-  typeUnion :: Parsing p => p TypeSpecifier
-  typeUnion = TypeUnion <$> (L.rword "union" *> unionBody)
+typeUnion :: Parsing p => p TypeSpecifier
+typeUnion = TypeUnion <$> (L.rword "union" *> unionBody)
 
-  typeIdentifier :: Parsing p => p TypeSpecifier
-  typeIdentifier = TypeIdentifier <$> identifier
+typeIdentifier :: Parsing p => p TypeSpecifier
+typeIdentifier = TypeIdentifier <$> identifier
 
 value :: Parsing p => p Value
-value = eitherP constant identifier
+value = eitherP constant identifierRef
 
 constantDef :: Parsing p => p ConstantDef
 constantDef = ConstantDef
@@ -218,13 +228,31 @@ constant = choice
   , octalConstant
   ]
 
+identifierWord :: Parsing p => p Text
+identifierWord = L.lexeme . try $ do
+  word <- T.pack <$> ((:) <$> L.letterChar <*> many L.alphaNumChar)
+  -- Check keyword
+  if word `elem` L.reservedWords
+    then keywordIdentifier word
+    else pure word
+
+identifierRef :: Parsing p => p IdentifierRef
+identifierRef = IdentifierRef <$> identifierWord
+
 identifier :: Parsing p => p Identifier
-identifier = Identifier . T.pack <$> (L.lexeme . try) (p >>= check)
- where
-   p = (:) <$> L.letterChar <*> many L.alphaNumChar <?> "identifier"
-   check x = if x `elem` L.reservedWords
-     then Prelude.fail $ "keyword " <> show x <> " cannot be an identifier"
-     else pure x
+identifier = try $ do
+  pos <- getPosition
+  word <- identifierWord
+  let id = Identifier word
+
+  -- Check uniqueness
+  idPositions <- get
+  lookup id idPositions
+    & maybe (pure ()) (conflictingIdentifier word)
+
+  -- Save position
+  modify ((id, pos) :) $> id
+
 
 decimalConstant :: Parsing p => p Constant
 decimalConstant = DecConstant <$> L.signed L.space (L.lexeme L.decimal)
@@ -233,4 +261,5 @@ octalConstant :: Parsing p => p Constant
 octalConstant = OctConstant <$> (L.char '0' >> L.octal)
 
 hexadecimalConstant :: Parsing p => p Constant
-hexadecimalConstant = HexConstant <$> (L.char '0' >> L.char' 'x' >> L.hexadecimal)
+hexadecimalConstant = HexConstant
+  <$> (L.char '0' >> L.char' 'x' >> L.hexadecimal)

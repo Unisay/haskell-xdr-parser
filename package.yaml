@@ -41,6 +41,7 @@ dependencies:
 - bytestring
 - containers
 - megaparsec
+- mmorph
 - mtl
 - protolude
 - text
