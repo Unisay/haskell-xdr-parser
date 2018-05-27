@@ -1,35 +1,36 @@
 module Data.Xdr.Parser
   ( specification
   , parseFile
+  , runParser
   ) where
 
-import           Control.Arrow   (left)
-import qualified Data.Text       as T
-import qualified Data.Xdr.Lexer  as L
+import           Control.Arrow    (left)
+import qualified Data.Text        as T
+import qualified Data.Xdr.Lexer   as L
+import           Data.Xdr.Parsing
 import           Data.Xdr.Spec
 import qualified Prelude
-import           Protolude       hiding (check, many, try)
-import           Text.Megaparsec hiding (State)
-
-type Scope = Text
-type S = StateT (Map Scope [Identifier]) IO
-type Parser = ParsecT Void Text S
+import           Protolude        hiding (check, many, try)
+import           Text.Megaparsec
 
 parseFile :: FilePath -> IO (Either Text Specification)
-parseFile =  b . c
+parseFile path = readFile path
+             <&> runParser spec path
+             <&> left show
   where
-  b :: S (Either (ParseError (Token Text) Void) Specification) -> IO (Either Text Specification)
-  b s = left show <$> evalStateT s mempty
-  c :: FilePath -> S (Either (ParseError (Token Text) Void) Specification)
-  c path = liftIO (readFile path) >>= runParserT specification path
+    spec :: Parser Specification
+    spec = evalStateT specification initialState
 
-specification :: Parser Specification
+    initialState :: ParserState
+    initialState = mempty
+
+specification :: Parsing p => p Specification
 specification = between L.space eof $ sepEndBy definition L.space
 
-definition :: Parser Definition
+definition :: Parsing p => p Definition
 definition = eitherP typeDef constantDef
 
-typeDef :: Parser TypeDef
+typeDef :: Parsing p => p TypeDef
 typeDef = choice
   [ typeDef'
   , typeDefEnum
@@ -37,60 +38,60 @@ typeDef = choice
   , typeDefUnion
   ] where
 
-  typeDef' :: Parser TypeDef
+  typeDef' :: Parsing p => p TypeDef
   typeDef' = TypeDef
     <$> (L.rword "typedef" *> declaration')
 
-  typeDefEnum :: Parser TypeDef
+  typeDefEnum :: Parsing p => p TypeDef
   typeDefEnum = TypeDefEnum
     <$> (L.rword "enum" *> identifier)
     <*> (enumBody <* L.semicolon)
 
-  typeDefStruct :: Parser TypeDef
+  typeDefStruct :: Parsing p => p TypeDef
   typeDefStruct =
     TypeDefStruct
       <$> (L.rword "struct" *> identifier)
       <*> (structBody <* L.semicolon)
 
-  typeDefUnion :: Parser TypeDef
+  typeDefUnion :: Parsing p => p TypeDef
   typeDefUnion =
     TypeDefUnion
       <$> (L.rword "union" *> identifier)
       <*> (unionBody <* L.semicolon)
 
-enumBody :: Parser EnumBody
+enumBody :: Parsing p => p EnumBody
 enumBody = L.braces $ L.nonEmptyList L.comma idValue
   where
-  idValue :: Parser (Identifier, Value)
+  idValue :: Parsing p => p (Identifier, Value)
   idValue = (,)
     <$> identifier <* L.symbol "="
     <*> value
 
-structBody :: Parser StructBody
+structBody :: Parsing p => p StructBody
 structBody = L.braces $ L.nonEmptyLines declaration'
 
-unionBody :: Parser UnionBody
+unionBody :: Parsing p => p UnionBody
 unionBody = body
   <$> unionDiscriminant
   <*> L.braces ((,) <$> unionArms <*> unionDefault)
   where
   body discr (arms, def) = UnionBody discr arms def
 
-  unionDefault :: Parser (Maybe Declaration)
+  unionDefault :: Parsing p => p (Maybe Declaration)
   unionDefault = optional $ L.rword "default" >> L.colon *> declaration'
 
-  unionDiscriminant :: Parser Declaration
+  unionDiscriminant :: Parsing p => p Declaration
   unionDiscriminant = L.rword "switch" *> L.parens declaration
 
-  unionArms :: Parser (NonEmpty CaseSpec)
+  unionArms :: Parsing p => p (NonEmpty CaseSpec)
   unionArms = L.nonEmptyLines $
     CaseSpec <$> caseSpecValues <*> declaration'
 
-  caseSpecValues :: Parser (NonEmpty Value)
+  caseSpecValues :: Parsing p => p (NonEmpty Value)
   caseSpecValues = L.nonEmptyLines $
     L.rword "case" *> value <* L.colon
 
-declaration :: Parser Declaration
+declaration :: Parsing p => p Declaration
 declaration = choice
   [ declarationSingle
   , declarationArrayFixLen
@@ -102,50 +103,50 @@ declaration = choice
   , declarationVoid
   ] where
 
-  declarationSingle :: Parser Declaration
+  declarationSingle :: Parsing p => p Declaration
   declarationSingle = DeclarationSingle
     <$> typeSpecifier
     <*> identifier
 
-  declarationArrayFixLen :: Parser Declaration
+  declarationArrayFixLen :: Parsing p => p Declaration
   declarationArrayFixLen = DeclarationArrayFixLen
     <$> typeSpecifier
     <*> identifier
     <*> L.brackets value
 
-  declarationArrayVarLen :: Parser Declaration
+  declarationArrayVarLen :: Parsing p => p Declaration
   declarationArrayVarLen = DeclarationArrayVarLen
     <$> typeSpecifier
     <*> identifier
     <*> L.angles (optional value)
 
-  declarationOpaqueFixLen :: Parser Declaration
+  declarationOpaqueFixLen :: Parsing p => p Declaration
   declarationOpaqueFixLen = DeclarationOpaqueFixLen
     <$> lookAhead (L.rword "opaque" *> identifier)
     <*> L.brackets value
 
-  declarationOpaqueVarLen :: Parser Declaration
+  declarationOpaqueVarLen :: Parsing p => p Declaration
   declarationOpaqueVarLen = DeclarationOpaqueVarLen
     <$> (L.rword "opaque" *> identifier)
     <*> L.angles (optional value)
 
-  declarationString :: Parser Declaration
+  declarationString :: Parsing p => p Declaration
   declarationString = DeclarationString
     <$> (L.rword "string" *> identifier)
     <*> L.angles (optional value)
 
-  declarationOptional :: Parser Declaration
+  declarationOptional :: Parsing p => p Declaration
   declarationOptional = DeclarationOptional
     <$> (typeSpecifier <* L.symbol "*")
     <*> identifier
 
-  declarationVoid :: Parser Declaration
+  declarationVoid :: Parsing p => p Declaration
   declarationVoid = DeclarationVoid <$ L.rword "void"
 
-declaration' :: Parser Declaration
+declaration' :: Parsing p => p Declaration
 declaration' = declaration <* L.semicolon
 
-typeSpecifier :: Parser TypeSpecifier
+typeSpecifier :: Parsing p => p TypeSpecifier
 typeSpecifier = choice
   [ typeUnsignedInt
   , typeInt
@@ -161,74 +162,75 @@ typeSpecifier = choice
   , typeIdentifier
   ] where
 
+  unsigned :: Parsing p => p ()
   unsigned = L.rword "unsigned"
 
-  typeUnsignedInt :: Parser TypeSpecifier
+  typeUnsignedInt :: Parsing p => p TypeSpecifier
   typeUnsignedInt = TypeUnsignedInt
     <$ (unsigned >> L.rword "int")
 
-  typeInt :: Parser TypeSpecifier
+  typeInt :: Parsing p => p TypeSpecifier
   typeInt = TypeInt <$ L.rword "int"
 
-  typeUnsignedHyper :: Parser TypeSpecifier
+  typeUnsignedHyper :: Parsing p => p TypeSpecifier
   typeUnsignedHyper = TypeUnsignedHyper
     <$ (unsigned >> L.rword "hyper")
 
-  typeHyper :: Parser TypeSpecifier
+  typeHyper :: Parsing p => p TypeSpecifier
   typeHyper = TypeHyper <$ L.rword "hyper"
 
-  typeFloat :: Parser TypeSpecifier
+  typeFloat :: Parsing p => p TypeSpecifier
   typeFloat = TypeFloat <$ L.rword "float"
 
-  typeDouble :: Parser TypeSpecifier
+  typeDouble :: Parsing p => p TypeSpecifier
   typeDouble = TypeDouble <$ L.rword "double"
 
-  typeQuadruple :: Parser TypeSpecifier
+  typeQuadruple :: Parsing p => p TypeSpecifier
   typeQuadruple = TypeQuadruple <$ L.rword "quadruple"
 
-  typeBool :: Parser TypeSpecifier
+  typeBool :: Parsing p => p TypeSpecifier
   typeBool = TypeBool <$ L.rword "bool"
 
-  typeEnum :: Parser TypeSpecifier
+  typeEnum :: Parsing p => p TypeSpecifier
   typeEnum = TypeEnum <$> (L.rword "enum" *> enumBody)
 
-  typeStruct :: Parser TypeSpecifier
+  typeStruct :: Parsing p => p TypeSpecifier
   typeStruct = TypeStruct <$> (L.rword "struct" *> structBody)
 
-  typeUnion :: Parser TypeSpecifier
+  typeUnion :: Parsing p => p TypeSpecifier
   typeUnion = TypeUnion <$> (L.rword "union" *> unionBody)
 
-  typeIdentifier :: Parser TypeSpecifier
+  typeIdentifier :: Parsing p => p TypeSpecifier
   typeIdentifier = TypeIdentifier <$> identifier
 
-value :: Parser Value
+value :: Parsing p => p Value
 value = eitherP constant identifier
 
-constantDef :: Parser ConstantDef
+constantDef :: Parsing p => p ConstantDef
 constantDef = ConstantDef
   <$> (L.rword "const" *> identifier)
   <*> (L.symbol "=" *> constant <* L.semicolon)
 
-constant :: Parser Constant
+constant :: Parsing p => p Constant
 constant = choice
   [ decimalConstant
   , hexadecimalConstant
   , octalConstant
   ]
 
-identifier :: Parser Identifier
+identifier :: Parsing p => p Identifier
 identifier = Identifier . T.pack <$> (L.lexeme . try) (p >>= check)
  where
-  p = (:) <$> L.letterChar <*> many L.alphaNumChar <?> "identifier"
-  check x = if x `elem` L.reservedWords
-    then Prelude.fail $ "keyword " <> show x <> " cannot be an identifier"
-    else pure x
+   p = (:) <$> L.letterChar <*> many L.alphaNumChar <?> "identifier"
+   check x = if x `elem` L.reservedWords
+     then Prelude.fail $ "keyword " <> show x <> " cannot be an identifier"
+     else pure x
 
-decimalConstant :: Parser Constant
+decimalConstant :: Parsing p => p Constant
 decimalConstant = DecConstant <$> L.signed L.space (L.lexeme L.decimal)
 
-octalConstant :: Parser Constant
+octalConstant :: Parsing p => p Constant
 octalConstant = OctConstant <$> (L.char '0' >> L.octal)
 
-hexadecimalConstant :: Parser Constant
+hexadecimalConstant :: Parsing p => p Constant
 hexadecimalConstant = HexConstant <$> (L.char '0' >> L.char' 'x' >> L.hexadecimal)

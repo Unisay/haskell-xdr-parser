@@ -38,6 +38,7 @@ ghc-options:
 
 dependencies:
 - base >= 4.9 && < 5
+- bytestring
 - containers
 - megaparsec
 - mtl
@@ -69,7 +70,6 @@ tests:
     dependencies:
     - xdr
     - base >= 4.7 && < 5
-    - bytestring
     - filepath
     - protolude
     - tasty

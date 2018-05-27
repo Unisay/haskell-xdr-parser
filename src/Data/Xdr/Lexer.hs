@@ -17,59 +17,58 @@ module Data.Xdr.Lexer
   , semicolon
   ) where
 
+import           Data.Xdr.Parsing
 import qualified Prelude
 import           Protolude                  hiding (many, try)
-import           Text.Megaparsec
+import           Text.Megaparsec            hiding (State)
 import           Text.Megaparsec.Char       hiding (space)
 import           Text.Megaparsec.Char.Lexer hiding (lexeme, space, symbol)
 import qualified Text.Megaparsec.Char.Lexer as L
 
-type Parser m = ParsecT Void Text m
-
 -- | Space consumer
-space :: Parser m ()
+space :: Parsing p => p ()
 space = L.space space1 lineComment blockComment
  where
   lineComment  = L.skipLineComment "//"
   blockComment = L.skipBlockComment "/*" "*/"
 
 -- | Consume whitespace after every lexeme automatically, but not before it.
-lexeme :: Parser m a -> Parser m a
+lexeme :: Parsing p => p a -> p a
 lexeme = L.lexeme space
 
-symbol :: Text -> Parser m Text
+symbol :: Parsing p => Text -> p Text
 symbol = L.symbol space
 
-colon :: Parser m Text
+colon :: Parsing p => p Text
 colon = symbol ":"
 
-semicolon :: Parser m Text
+semicolon :: Parsing p => p Text
 semicolon = symbol ";"
 
-comma :: Parser m Text
+comma :: Parsing p => p Text
 comma = symbol ","
 
-parens :: Parser m a -> Parser m a
+parens :: Parsing p => p a -> p a
 parens = between (symbol "(") (symbol ")")
 
-angles :: Parser m a -> Parser m a
+angles :: Parsing p => p a -> p a
 angles = between (symbol "<") (symbol ">")
 
-braces :: Parser m a -> Parser m a
+braces :: Parsing p => p a -> p a
 braces = between (symbol "{") (symbol "}")
 
-brackets :: Parser m a -> Parser m a
+brackets :: Parsing p => p a -> p a
 brackets = between (symbol "[") (symbol "]")
 
 -- | @'nonEmptyList' p sep@ parses /one/ or more occurrences of @p@, separated by
 -- @sep@. Returns a list of values returned by @p@.
-nonEmptyList :: Parser m sep -> Parser m a -> Parser m (NonEmpty a)
+nonEmptyList :: Parsing p => p sep -> p a -> p (NonEmpty a)
 nonEmptyList sep p = do
   x <- p
   (x :|) <$> many (sep >> p)
 {-# INLINE nonEmptyList #-}
 
-nonEmptyLines :: Parser m a -> Parser m (NonEmpty a)
+nonEmptyLines :: Parsing p => p a -> p (NonEmpty a)
 nonEmptyLines = nonEmptyList space
 {-# INLINE nonEmptyLines #-}
 
@@ -95,5 +94,5 @@ reservedWords =
   , "void"
   ]
 
-rword :: Text -> Parser m ()
+rword :: Parsing p => Text -> p ()
 rword w = (lexeme . try) (string w *> notFollowedBy alphaNumChar)
