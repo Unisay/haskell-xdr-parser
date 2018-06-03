@@ -4,12 +4,13 @@ module Data.Xdr.Parser
   , runParser
   ) where
 
-import           Data.List        (lookup)
-import qualified Data.Text        as T
-import qualified Data.Xdr.Lexer   as L
+import qualified Data.Text            as T
+import qualified Data.Xdr.Lexer       as L
+import           Data.Xdr.ParserState (ParserState)
+import qualified Data.Xdr.ParserState as PS
 import           Data.Xdr.Parsing
-import           Data.Xdr.Spec
-import           Protolude        hiding (many, try)
+import           Data.Xdr.Types
+import           Protolude            hiding (many, try)
 import           Text.Megaparsec
 
 parseFile :: FilePath -> IO (Either ParserError Specification)
@@ -20,7 +21,7 @@ parseFile path = do
     print finalState $> sp
 
 runStatefulParser :: StatefulParser a -> Parser (a, ParserState)
-runStatefulParser = flip runStateT mempty
+runStatefulParser = flip runStateT PS.initialState
 
 specification :: Parsing p => p Specification
 specification = between L.space eof $ sepEndBy definition L.space
@@ -122,28 +123,28 @@ declaration = choice
   declarationArrayFixLen = DeclarationArrayFixLen
     <$> typeSpecifier
     <*> identifier
-    <*> L.brackets value
+    <*> L.brackets nonNegativeValue
 
   declarationArrayVarLen :: Parsing p => p Declaration
   declarationArrayVarLen = DeclarationArrayVarLen
     <$> typeSpecifier
     <*> identifier
-    <*> L.angles (optional value)
+    <*> L.angles (optional nonNegativeValue)
 
   declarationOpaqueFixLen :: Parsing p => p Declaration
   declarationOpaqueFixLen = DeclarationOpaqueFixLen
     <$> lookAhead (L.rword "opaque" *> identifier)
-    <*> L.brackets value
+    <*> L.brackets nonNegativeValue
 
   declarationOpaqueVarLen :: Parsing p => p Declaration
   declarationOpaqueVarLen = DeclarationOpaqueVarLen
     <$> (L.rword "opaque" *> identifier)
-    <*> L.angles (optional value)
+    <*> L.angles (optional nonNegativeValue)
 
   declarationString :: Parsing p => p Declaration
   declarationString = DeclarationString
     <$> (L.rword "string" *> identifier)
-    <*> L.angles (optional value)
+    <*> L.angles (optional nonNegativeValue)
 
   declarationOptional :: Parsing p => p Declaration
   declarationOptional = DeclarationOptional
@@ -216,10 +217,36 @@ typeIdentifier = TypeIdentifier <$> identifier
 value :: Parsing p => p Value
 value = eitherP constant identifierRef
 
+nonNegativeValue :: Parsing p => p Value
+nonNegativeValue = do
+  pos <- getPosition
+  v <- value
+  checkNonNegValue pos v
+  pure v
+
+  where
+    checkNonNegValue pos (Left cd)  =
+      when (isNegativeConst cd) (negativeArrayLengthConst pos)
+
+    checkNonNegValue pos (Right idr@(IdentifierRef id)) =
+      whenM (isNegativeIdRef idr pos) (negativeArrayLengthId id pos)
+
+    isNegativeConst (DecConstant i) = i < 0
+    isNegativeConst (HexConstant i) = i < 0
+    isNegativeConst (OctConstant i) = i < 0
+
+    isNegativeIdRef idr@(IdentifierRef id) pos = do
+      parserState <- get
+      PS.lookupConstantById parserState idr &
+        maybe (negativeArrayLengthId id pos) (pure . isNegativeConst)
+
 constantDef :: Parsing p => p ConstantDef
-constantDef = ConstantDef
-  <$> (L.rword "const" *> identifier)
-  <*> (L.symbol "=" *> constant <* L.semicolon)
+constantDef = do
+  cd <- ConstantDef
+    <$> (L.rword "const" *> identifier)
+    <*> (L.symbol "=" *> constant <* L.semicolon)
+  modify (PS.addConstantDef cd)
+  pure cd
 
 constant :: Parsing p => p Constant
 constant = choice
@@ -245,13 +272,15 @@ identifier = try $ do
   word <- identifierWord
   let id = Identifier word
 
+  pure id
+
   -- Check uniqueness
-  idPositions <- get
-  lookup id idPositions
-    & maybe (pure ()) (conflictingIdentifier word)
+  -- parserState <- get
+  -- PS.lookupIdentifier parserState id
+  --   & maybe (pure ()) (conflictingIdentifier word . snd)
 
   -- Save position
-  modify ((id, pos) :) $> id
+  -- modify (PS.addIdentifier (id, pos)) $> id
 
 
 decimalConstant :: Parsing p => p Constant

@@ -1,4 +1,4 @@
-module Data.Xdr.Spec where
+module Data.Xdr.Types where
 
 import           Data.List.NonEmpty
 import           Protolude
