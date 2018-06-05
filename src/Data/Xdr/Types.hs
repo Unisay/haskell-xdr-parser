@@ -21,15 +21,14 @@ data Declaration
   | DeclarationString Identifier (Maybe Value)
   | DeclarationOptional TypeSpecifier Identifier
   | DeclarationVoid
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data Discriminant
-  = DiscriminantInt IdentifierRef
-  | DiscriminantUInt IdentifierRef
-  | DiscriminantBool IdentifierRef
-  | DiscriminantEnum IdentifierRef
-  | Discriminant IdentifierRef
-  deriving (Eq, Show)
+  = DiscriminantInt Identifier
+  | DiscriminantUInt Identifier
+  | DiscriminantBool Identifier
+  | DiscriminantEnum Identifier
+  deriving (Eq, Ord, Show)
 
 type Value = Either Constant IdentifierRef
 
@@ -51,8 +50,8 @@ data TypeSpecifier
   | TypeEnum EnumBody
   | TypeStruct StructBody
   | TypeUnion UnionBody
-  | TypeIdentifier Identifier
-  deriving (Eq, Show)
+  | TypeIdentifier IdentifierRef
+  deriving (Eq, Show, Ord)
 
 type EnumBody = NonEmpty (Identifier, Value)
 
@@ -63,25 +62,25 @@ data UnionBody = UnionBody
   , unionArms         :: NonEmpty CaseSpec
   , unionDefault      :: Maybe Declaration
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data CaseSpec
   = CaseSpec
   { caseSpecValues      :: NonEmpty Value
   , caseSpecDeclaration :: Declaration
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data ConstantDef
   = ConstantDef Identifier Constant
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data TypeDef
   = TypeDef Declaration
   | TypeDefEnum Identifier EnumBody
   | TypeDefStruct Identifier StructBody
   | TypeDefUnion Identifier UnionBody
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 type Definition = Either TypeDef ConstantDef
 

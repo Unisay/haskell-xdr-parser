@@ -27,6 +27,8 @@ goldenTests = do
 
 parseXdr :: FilePath -> FilePath -> IO ()
 parseXdr source target = do
-  res <- parseFile source
+  raw <- readFile source
+  let par = runStatefulParser specification
+      res = runParser par source raw
   txt <- either (fail . show) (pure . ppShow) res
   writeFile target (toS txt)

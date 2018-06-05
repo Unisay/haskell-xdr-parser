@@ -2,15 +2,17 @@ module Data.Xdr.Parser
   ( specification
   , parseFile
   , runParser
+  , runStatefulParser
   ) where
 
-import qualified Data.Text            as T
-import qualified Data.Xdr.Lexer       as L
-import           Data.Xdr.ParserState (ParserState)
-import qualified Data.Xdr.ParserState as PS
+import qualified Data.Text              as T
+import qualified Data.Xdr.Lexer         as L
+import           Data.Xdr.ParserState   (ParserState, Positioned)
+import qualified Data.Xdr.ParserState   as PS
 import           Data.Xdr.Parsing
+import           Data.Xdr.Parsing.Error
 import           Data.Xdr.Types
-import           Protolude            hiding (many, try)
+import           Protolude              hiding (many, try)
 import           Text.Megaparsec
 
 parseFile :: FilePath -> IO (Either ParserError Specification)
@@ -18,7 +20,7 @@ parseFile path = do
   raw <- readFile path
   let parser = runStatefulParser specification
   forM (runParser parser path raw) $ \(sp, finalState) ->
-    print finalState $> sp
+    print finalState $> sp -- TODO: remove print
 
 runStatefulParser :: StatefulParser a -> Parser (a, ParserState)
 runStatefulParser = flip runStateT PS.initialState
@@ -28,6 +30,11 @@ specification = between L.space eof $ sepEndBy definition L.space
 
 definition :: Parsing p => p Definition
 definition = eitherP typeDef constantDef
+
+addIdentifier :: Parsing p => Identifier -> Positioned TypeSpecifier -> p ()
+addIdentifier id pts@(_, ts) = do
+  modify (PS.addIdentifier id pts)
+  when (isScopeCreating ts) createScope
 
 typeDef :: Parsing p => p TypeDef
 typeDef = choice
@@ -42,9 +49,11 @@ typeDef = choice
     <$> (L.rword "typedef" *> declaration')
 
   typeDefEnum :: Parsing p => p TypeDef
-  typeDefEnum = TypeDefEnum
-    <$> (L.rword "enum" *> identifier)
-    <*> (enumBody <* L.semicolon)
+  typeDefEnum = do
+    (pos, id) <- positioned $ L.rword "enum" *> identifier
+    body <- enumBody <* L.semicolon
+    addIdentifier id (pos, TypeEnum body)
+    pure $ TypeDefEnum id body
 
   typeDefStruct :: Parsing p => p TypeDef
   typeDefStruct =
@@ -53,10 +62,11 @@ typeDef = choice
       <*> (structBody <* L.semicolon)
 
   typeDefUnion :: Parsing p => p TypeDef
-  typeDefUnion =
-    TypeDefUnion
-      <$> (L.rword "union" *> identifier)
-      <*> (unionBody <* L.semicolon)
+  typeDefUnion = do
+    (pos, id) <- positioned $ L.rword "union" *> identifier
+    body <- unionBody <* L.semicolon
+    addIdentifier id (pos, TypeUnion body)
+    pure $ TypeDefUnion id body
 
 enumBody :: Parsing p => p EnumBody
 enumBody = L.braces $ L.nonEmptyList L.comma idValue
@@ -81,18 +91,30 @@ unionBody = body
 
   unionDiscriminant :: Parsing p => p Discriminant
   unionDiscriminant = choice
-    [ DiscriminantInt  <$> (typeInt  *> typedIdRef (== TypeInt))
-    , DiscriminantUInt <$> (typeUInt *> typedIdRef (== TypeUInt))
-    , DiscriminantBool <$> (typeBool *> typedIdRef (== TypeBool))
-    , DiscriminantEnum <$> (typeEnum *> typedIdRef isEnum)
+    [ DiscriminantInt  <$> (typeInt  *> identifier)
+    , DiscriminantUInt <$> (typeUInt *> identifier)
+    , DiscriminantBool <$> (typeBool *> identifier)
+    , DiscriminantEnum <$> (typeEnum *> identifier)
+    , do idRef <- positioned identifierRef
+         id <- positioned identifier
+         typeSpec <- evaluateRef idRef
+         typedDiscriminant id typeSpec
     ] where
 
-    isEnum (TypeEnum _) = True
-    isEnum _            = False
+    evaluateRef :: Parsing p => Positioned IdentifierRef -> p TypeSpecifier
+    evaluateRef (pos, idRef) = get <&> PS.lookupIdentifierRef idRef >>=
+      maybe (invalidDiscriminant pos) (pure . unPositioned)
 
-    typedIdRef :: Parsing p => (TypeSpecifier -> Bool) -> p IdentifierRef
-    typedIdRef p = try $
-      identifierRef >>= notImplemented
+    typedDiscriminant
+      :: Parsing p
+      => Positioned Identifier
+      -> TypeSpecifier
+      -> p Discriminant
+    typedDiscriminant (_, id) TypeInt      = pure $ DiscriminantInt  id
+    typedDiscriminant (_, id) TypeUInt     = pure $ DiscriminantUInt id
+    typedDiscriminant (_, id) TypeBool     = pure $ DiscriminantBool id
+    typedDiscriminant (_, id) (TypeEnum _) = pure $ DiscriminantEnum id
+    typedDiscriminant (pos, _) ts          = invalidDiscriminantType ts pos
 
   unionArms :: Parsing p => p (NonEmpty CaseSpec)
   unionArms = L.nonEmptyLines $
@@ -115,21 +137,27 @@ declaration = choice
   ] where
 
   declarationSingle :: Parsing p => p Declaration
-  declarationSingle = DeclarationSingle
-    <$> typeSpecifier
-    <*> identifier
+  declarationSingle = do
+    pts@(_, ts) <- positioned typeSpecifier
+    id <- identifier
+    addIdentifier id pts
+    pure $ DeclarationSingle ts id
 
   declarationArrayFixLen :: Parsing p => p Declaration
-  declarationArrayFixLen = DeclarationArrayFixLen
-    <$> typeSpecifier
-    <*> identifier
-    <*> L.brackets nonNegativeValue
+  declarationArrayFixLen = do
+    pts@(_, ts) <- positioned typeSpecifier
+    id <- identifier
+    len <- L.brackets nonNegativeValue
+    addIdentifier id pts
+    pure $ DeclarationArrayFixLen ts id len
 
   declarationArrayVarLen :: Parsing p => p Declaration
-  declarationArrayVarLen = DeclarationArrayVarLen
-    <$> typeSpecifier
-    <*> identifier
-    <*> L.angles (optional nonNegativeValue)
+  declarationArrayVarLen = do
+    pts@(_, ts) <- positioned typeSpecifier
+    id <- identifier
+    len <- L.angles (optional nonNegativeValue)
+    addIdentifier id pts
+    pure $ DeclarationArrayVarLen ts id len
 
   declarationOpaqueFixLen :: Parsing p => p Declaration
   declarationOpaqueFixLen = DeclarationOpaqueFixLen
@@ -147,9 +175,11 @@ declaration = choice
     <*> L.angles (optional nonNegativeValue)
 
   declarationOptional :: Parsing p => p Declaration
-  declarationOptional = DeclarationOptional
-    <$> (typeSpecifier <* L.symbol "*")
-    <*> identifier
+  declarationOptional = do
+    pts@(_, ts) <- positioned typeSpecifier <* L.symbol "*"
+    id <- identifier
+    addIdentifier id pts
+    pure $ DeclarationOptional ts id
 
   declarationVoid :: Parsing p => p Declaration
   declarationVoid = DeclarationVoid <$ L.rword "void"
@@ -212,7 +242,7 @@ typeUnion :: Parsing p => p TypeSpecifier
 typeUnion = TypeUnion <$> (L.rword "union" *> unionBody)
 
 typeIdentifier :: Parsing p => p TypeSpecifier
-typeIdentifier = TypeIdentifier <$> identifier
+typeIdentifier = TypeIdentifier <$> identifierRef
 
 value :: Parsing p => p Value
 value = eitherP constant identifierRef
@@ -268,20 +298,20 @@ identifierRef = IdentifierRef <$> identifierWord
 
 identifier :: Parsing p => p Identifier
 identifier = try $ do
-  pos <- getPosition
   word <- identifierWord
   let id = Identifier word
-
-  pure id
-
   -- Check uniqueness
-  -- parserState <- get
-  -- PS.lookupIdentifier parserState id
-  --   & maybe (pure ()) (conflictingIdentifier word . snd)
+  existing <- get <&> PS.lookupIdentifier id
+  maybe (pure id) (conflictingIdentifier word . fst) existing
 
-  -- Save position
-  -- modify (PS.addIdentifier (id, pos)) $> id
 
+isScopeCreating :: TypeSpecifier -> Bool
+isScopeCreating (TypeStruct _) = True
+isScopeCreating (TypeUnion  _) = True
+isScopeCreating _              = False
+
+createScope :: Parsing p => p ()
+createScope = modify PS.createScope
 
 decimalConstant :: Parsing p => p Constant
 decimalConstant = DecConstant <$> L.signed L.space (L.lexeme L.decimal)
@@ -292,3 +322,9 @@ octalConstant = OctConstant <$> (L.char '0' >> L.octal)
 hexadecimalConstant :: Parsing p => p Constant
 hexadecimalConstant = HexConstant
   <$> (L.char '0' >> L.char' 'x' >> L.hexadecimal)
+
+positioned :: Parsing p => p a -> p (Positioned a)
+positioned p = (,) <$> getPosition <*> p
+
+unPositioned :: Positioned a -> a
+unPositioned = snd

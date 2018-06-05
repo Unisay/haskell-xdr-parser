@@ -1,0 +1,22 @@
+/*
+ * Types of files:
+ */
+enum filekind {
+   TEXT = 0,       /* ascii data */
+   DATA = 1,       /* raw data   */
+   EXEC = 2        /* executable */
+};
+
+/*
+ * File information, per kind of file:
+ */
+union filetype switch (filekind kind) {
+  case TEXT:
+     void;                   /* no extra information */
+  case DATA:
+     string creator<10>;     /* data creator         */
+  case EXEC:
+     string interpretor<42>; /* program interpretor  */
+  default:
+     foo bar;
+};

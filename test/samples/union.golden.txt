@@ -1,7 +1,4 @@
-( [ Right (ConstantDef (Identifier "MAXUSERNAME") (DecConstant 32))
-  , Right (ConstantDef (Identifier "MAXFILELEN") (DecConstant 65535))
-  , Right (ConstantDef (Identifier "MAXNAMELEN") (DecConstant 255))
-  , Left
+( [ Left
       (TypeDefEnum
          (Identifier "filekind")
          (( Identifier "TEXT" , Left (DecConstant 0) ) :|
@@ -22,14 +19,13 @@
                      { caseSpecValues = Right (IdentifierRef "DATA") :| []
                      , caseSpecDeclaration =
                          DeclarationString
-                           (Identifier "creator") (Just (Right (IdentifierRef "MAXNAMELEN")))
+                           (Identifier "creator") (Just (Left (DecConstant 10)))
                      }
                  , CaseSpec
                      { caseSpecValues = Right (IdentifierRef "EXEC") :| []
                      , caseSpecDeclaration =
                          DeclarationString
-                           (Identifier "interpretor")
-                           (Just (Right (IdentifierRef "MAXNAMELEN")))
+                           (Identifier "interpretor") (Just (Left (DecConstant 42)))
                      }
                  ]
            , unionDefault =
@@ -37,50 +33,24 @@
                  (DeclarationSingle
                     (TypeIdentifier (IdentifierRef "foo")) (Identifier "bar"))
            })
-  , Left
-      (TypeDefStruct
-         (Identifier "file")
-         (DeclarationString
-            (Identifier "filename")
-            (Just (Right (IdentifierRef "MAXNAMELEN"))) :|
-            [ DeclarationSingle
-                (TypeIdentifier (IdentifierRef "filetype")) (Identifier "type")
-            , DeclarationString
-                (Identifier "owner") (Just (Right (IdentifierRef "MAXUSERNAME")))
-            , DeclarationOpaqueVarLen
-                (Identifier "data") (Just (Right (IdentifierRef "MAXFILELEN")))
-            ]))
   ]
 , ParserState
-    [ ConstantDef (Identifier "MAXNAMELEN") (DecConstant 255)
-    , ConstantDef (Identifier "MAXFILELEN") (DecConstant 65535)
-    , ConstantDef (Identifier "MAXUSERNAME") (DecConstant 32)
-    ]
-    (fromList
-       [ ( Identifier "type"
-         , ( SourcePos
-               { sourceName = "test/samples/example.xdr"
-               , sourceLine = Pos 33
-               , sourceColumn = Pos 4
-               }
-           , TypeIdentifier (IdentifierRef "filetype")
-           )
-         )
-       ] :|
+    []
+    (fromList [] :|
        [ fromList
            [ ( Identifier "bar"
              , ( SourcePos
-                   { sourceName = "test/samples/example.xdr"
-                   , sourceLine = Pos 25
-                   , sourceColumn = Pos 12
+                   { sourceName = "test/samples/union.xdr"
+                   , sourceLine = Pos 21
+                   , sourceColumn = Pos 6
                    }
                , TypeIdentifier (IdentifierRef "foo")
                )
              )
            , ( Identifier "filekind"
              , ( SourcePos
-                   { sourceName = "test/samples/example.xdr"
-                   , sourceLine = Pos 8
+                   { sourceName = "test/samples/union.xdr"
+                   , sourceLine = Pos 4
                    , sourceColumn = Pos 1
                    }
                , TypeEnum
@@ -92,8 +62,8 @@
              )
            , ( Identifier "filetype"
              , ( SourcePos
-                   { sourceName = "test/samples/example.xdr"
-                   , sourceLine = Pos 18
+                   { sourceName = "test/samples/union.xdr"
+                   , sourceLine = Pos 13
                    , sourceColumn = Pos 1
                    }
                , TypeUnion
@@ -108,15 +78,13 @@
                                { caseSpecValues = Right (IdentifierRef "DATA") :| []
                                , caseSpecDeclaration =
                                    DeclarationString
-                                     (Identifier "creator")
-                                     (Just (Right (IdentifierRef "MAXNAMELEN")))
+                                     (Identifier "creator") (Just (Left (DecConstant 10)))
                                }
                            , CaseSpec
                                { caseSpecValues = Right (IdentifierRef "EXEC") :| []
                                , caseSpecDeclaration =
                                    DeclarationString
-                                     (Identifier "interpretor")
-                                     (Just (Right (IdentifierRef "MAXNAMELEN")))
+                                     (Identifier "interpretor") (Just (Left (DecConstant 42)))
                                }
                            ]
                      , unionDefault =
