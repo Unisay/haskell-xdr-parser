@@ -126,9 +126,9 @@ unionBody = body
 
 declaration :: Parsing p => p Declaration
 declaration = choice
-  [ declarationSingle
-  , declarationArrayFixLen
+  [ declarationArrayFixLen
   , declarationArrayVarLen
+  , declarationSingle
   , declarationOpaqueFixLen
   , declarationOpaqueVarLen
   , declarationString
@@ -144,7 +144,7 @@ declaration = choice
     pure $ DeclarationSingle ts id
 
   declarationArrayFixLen :: Parsing p => p Declaration
-  declarationArrayFixLen = do
+  declarationArrayFixLen = try $ do
     pts@(_, ts) <- positioned typeSpecifier
     id <- identifier
     len <- L.brackets nonNegativeValue
@@ -160,8 +160,8 @@ declaration = choice
     pure $ DeclarationArrayVarLen ts id len
 
   declarationOpaqueFixLen :: Parsing p => p Declaration
-  declarationOpaqueFixLen = DeclarationOpaqueFixLen
-    <$> lookAhead (L.rword "opaque" *> identifier)
+  declarationOpaqueFixLen = try $ DeclarationOpaqueFixLen
+    <$> (L.rword "opaque" *> identifier)
     <*> L.brackets nonNegativeValue
 
   declarationOpaqueVarLen :: Parsing p => p Declaration

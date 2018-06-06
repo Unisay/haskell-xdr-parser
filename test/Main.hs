@@ -1,11 +1,11 @@
 module Main where
 
-import           Control.Monad.Fail (fail)
 import           Data.Xdr.Parser
 import           Protolude
-import           System.FilePath    (replaceExtension, takeBaseName)
+import           System.FilePath   (replaceExtension, takeBaseName)
 import           Test.Tasty
 import           Test.Tasty.Golden
+import           Text.Megaparsec   (parseErrorPretty)
 import           Text.Show.Pretty
 
 main :: IO ()
@@ -30,5 +30,5 @@ parseXdr source target = do
   raw <- readFile source
   let par = runStatefulParser specification
       res = runParser par source raw
-  txt <- either (fail . show) (pure . ppShow) res
+  txt <- either (pure . parseErrorPretty) (pure . ppShow) res
   writeFile target (toS txt)

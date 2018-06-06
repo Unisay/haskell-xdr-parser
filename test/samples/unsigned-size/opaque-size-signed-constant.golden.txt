@@ -1,0 +1,2 @@
+test/samples/unsigned-size/opaque-size-signed-constant.xdr:8:26:
+Identifier "N" used as array size specification at test/samples/unsigned-size/opaque-size-signed-constant.xdr:8:25 must have been declared previously as an unsigned constant

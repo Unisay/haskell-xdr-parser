@@ -52,16 +52,19 @@ invalidDiscriminantType = (customFailure .). InvalidDiscriminantType
 
 instance Prelude.Show CustomError where
   show (KeywordIdentifier i) =
-    "Keyword '" <> show i <> "' cannot be used as identifier"
+    "Keyword " <> show i <> " cannot be used as identifier"
   show (ConflictingIdentifier i pos) =
-    "Identifier '" <> show i <> " has been already declared at " <> show pos
+    "Identifier " <> show i <> " has been already declared at " <> sourcePosPretty pos
   show (NegativeArrayLengthConst pos) =
-    "Only unsigned constant may be used as array size specification at " <> show pos
+    "Only unsigned constant may be used as array size specification at " <> sourcePosPretty pos
   show (NegativeArrayLengthIdentifier i pos) =
-    "Identifier '" <> show i <> "' used as array size specification at " <> show pos
+    "Identifier " <> show i <> " used as array size specification at " <> sourcePosPretty pos
     <> " must have been declared previously as an unsigned constant"
   show (InvalidDiscriminant pos) =
-    "Union descriminant doesn't evaluate to a known type at " <> show pos
+    "Union descriminant doesn't evaluate to a known type at " <> sourcePosPretty pos
   show (InvalidDiscriminantType _ pos) =
     "Union descriminant doesn't evaluate to an integer type "
-    <> "(\"int\", \"unsigned int\", \"bool\", \"enum\") at " <> show pos
+    <> "(\"int\", \"unsigned int\", \"bool\", \"enum\") at " <> sourcePosPretty pos
+
+instance ShowErrorComponent CustomError where
+  showErrorComponent = Prelude.show
