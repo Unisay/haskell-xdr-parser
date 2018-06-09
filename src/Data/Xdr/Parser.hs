@@ -280,9 +280,9 @@ constantDef = do
 
 constant :: Parsing p => p Constant
 constant = choice
-  [ decimalConstant
-  , hexadecimalConstant
+  [ hexadecimalConstant
   , octalConstant
+  , decimalConstant
   ]
 
 identifierWord :: Parsing p => p Text
@@ -317,11 +317,11 @@ decimalConstant :: Parsing p => p Constant
 decimalConstant = DecConstant <$> L.signed L.space (L.lexeme L.decimal)
 
 octalConstant :: Parsing p => p Constant
-octalConstant = OctConstant <$> (L.char '0' >> L.octal)
+octalConstant = OctConstant <$> try (L.char '0' >> L.octal)
 
 hexadecimalConstant :: Parsing p => p Constant
 hexadecimalConstant = HexConstant
-  <$> (L.char '0' >> L.char' 'x' >> L.hexadecimal)
+  <$> try (L.char '0' >> L.char' 'x' >> L.hexadecimal)
 
 positioned :: Parsing p => p a -> p (Positioned a)
 positioned p = (,) <$> getPosition <*> p

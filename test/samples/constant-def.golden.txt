@@ -1,0 +1,13 @@
+( [ Right (ConstantDef (Identifier "DEC") (DecConstant 42))
+  , Right (ConstantDef (Identifier "DECN") (DecConstant 0))
+  , Right (ConstantDef (Identifier "HEX") (HexConstant 871849179838))
+  , Right (ConstantDef (Identifier "OCT") (OctConstant 342391))
+  ]
+, ParserState
+    [ ConstantDef (Identifier "OCT") (OctConstant 342391)
+    , ConstantDef (Identifier "HEX") (HexConstant 871849179838)
+    , ConstantDef (Identifier "DECN") (DecConstant 0)
+    , ConstantDef (Identifier "DEC") (DecConstant 42)
+    ]
+    (fromList [] :| [])
+)

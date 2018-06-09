@@ -1,0 +1,25 @@
+/*
+
+RFC 4506
+
+6.2.4
+A decimal constant expresses a number in base 10 and is a sequence of one or more decimal digits,
+where the first digit is not a zero, and is optionally preceded by a minus-sign (’-’).
+
+6.2.5
+A hexadecimal constant expresses a number in base 16, and must be preceded by ’0x’,
+followed by one or more hexadecimal digits (’A’, ’B’, ’C’, ’D’, E’, ’F’, ’a’, ’b’, ’c’, ’d’, ’e’, ’f’,
+’0’, ’1’, ’2’, ’3’, ’4’, ’5’, ’6’, ’7’, ’8’, ’9’).
+
+6.2.6
+An octal constant expresses a number in base 8, always leads with digit 0,
+and is a sequence of one or more octal digits (’0’, ’1’, ’2’, ’3’, ’4’, ’5’, ’6’, ’7’).
+
+*/
+
+const DEC  = 42;
+const DECN = -0;
+
+const HEX = 0xCAFE42babe;
+
+const OCT = 001234567;
