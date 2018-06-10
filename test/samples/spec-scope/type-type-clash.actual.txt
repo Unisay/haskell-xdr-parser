@@ -1,0 +1,2 @@
+test/samples/spec-scope/type-type-clash.xdr:3:10:
+Identifier "A" has been already declared at test/samples/spec-scope/type-type-clash.xdr:1:1

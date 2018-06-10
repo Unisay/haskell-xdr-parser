@@ -1,0 +1,2 @@
+test/samples/spec-scope/const-const-clash.xdr:3:9:
+Identifier "A" has been already declared at test/samples/spec-scope/const-const-clash.xdr:1:1

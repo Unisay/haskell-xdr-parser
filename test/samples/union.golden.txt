@@ -1,3 +1,95 @@
-test/samples/union.xdr:21:13:
-unexpected ';'
-expecting '<', '[', or alphanumeric character
+( [ Left
+      (TypeDefEnum
+         (Identifier "filekind")
+         (( Identifier "TEXT" , Left (DecConstant 0) ) :|
+            [ ( Identifier "DATA" , Left (DecConstant 1) )
+            , ( Identifier "EXEC" , Left (DecConstant 2) )
+            ]))
+  , Left
+      (TypeDefUnion
+         (Identifier "filetype")
+         UnionBody
+           { unionDiscriminant = DiscriminantEnum (Identifier "kind")
+           , unionArms =
+               CaseSpec
+                 { caseSpecValues = Right (IdentifierRef "TEXT") :| []
+                 , caseSpecDeclaration = DeclarationVoid
+                 } :|
+                 [ CaseSpec
+                     { caseSpecValues = Right (IdentifierRef "DATA") :| []
+                     , caseSpecDeclaration =
+                         DeclarationString
+                           (Identifier "creator") (Just (Left (DecConstant 10)))
+                     }
+                 , CaseSpec
+                     { caseSpecValues = Right (IdentifierRef "EXEC") :| []
+                     , caseSpecDeclaration =
+                         DeclarationString
+                           (Identifier "interpretor") (Just (Left (DecConstant 42)))
+                     }
+                 ]
+           , unionDefault =
+               Just
+                 (DeclarationSingle
+                    (TypeIdentifier (IdentifierRef "foo")) (Identifier "bar"))
+           })
+  ]
+, ParserState
+    []
+    [ ( SourcePos
+          { sourceName = "test/samples/union.xdr"
+          , sourceLine = Pos 13
+          , sourceColumn = Pos 1
+          }
+      , ( Identifier "filetype"
+        , TypeUnion
+            UnionBody
+              { unionDiscriminant = DiscriminantEnum (Identifier "kind")
+              , unionArms =
+                  CaseSpec
+                    { caseSpecValues = Right (IdentifierRef "TEXT") :| []
+                    , caseSpecDeclaration = DeclarationVoid
+                    } :|
+                    [ CaseSpec
+                        { caseSpecValues = Right (IdentifierRef "DATA") :| []
+                        , caseSpecDeclaration =
+                            DeclarationString
+                              (Identifier "creator") (Just (Left (DecConstant 10)))
+                        }
+                    , CaseSpec
+                        { caseSpecValues = Right (IdentifierRef "EXEC") :| []
+                        , caseSpecDeclaration =
+                            DeclarationString
+                              (Identifier "interpretor") (Just (Left (DecConstant 42)))
+                        }
+                    ]
+              , unionDefault =
+                  Just
+                    (DeclarationSingle
+                       (TypeIdentifier (IdentifierRef "foo")) (Identifier "bar"))
+              }
+        )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/union.xdr"
+          , sourceLine = Pos 21
+          , sourceColumn = Pos 6
+          }
+      , ( Identifier "bar" , TypeIdentifier (IdentifierRef "foo") )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/union.xdr"
+          , sourceLine = Pos 4
+          , sourceColumn = Pos 1
+          }
+      , ( Identifier "filekind"
+        , TypeEnum
+            (( Identifier "TEXT" , Left (DecConstant 0) ) :|
+               [ ( Identifier "DATA" , Left (DecConstant 1) )
+               , ( Identifier "EXEC" , Left (DecConstant 2) )
+               ])
+        )
+      )
+    ]
+    (fromList [] :| [ fromList [] ])
+)

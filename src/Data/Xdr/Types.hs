@@ -25,7 +25,7 @@ data Declaration
 
 data Discriminant
   = DiscriminantInt Identifier
-  | DiscriminantUInt Identifier
+  | DiscriminantUnsignedInt Identifier
   | DiscriminantBool Identifier
   | DiscriminantEnum Identifier
   deriving (Eq, Ord, Show)
@@ -40,7 +40,7 @@ data Constant
 
 data TypeSpecifier
   = TypeInt
-  | TypeUInt
+  | TypeUnsignedInt
   | TypeHyper
   | TypeUnsignedHyper
   | TypeFloat

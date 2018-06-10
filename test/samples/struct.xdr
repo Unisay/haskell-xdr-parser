@@ -1,0 +1,42 @@
+struct S {
+
+  int i0;
+  int i1<>;
+  int i2<10>;
+  int i3[10];
+
+  unsigned int ui0;
+  unsigned int ui1<>;
+  unsigned int ui2<10>;
+  unsigned int ui3[10];
+
+  hyper h0;
+  hyper h1<>;
+  hyper h2<10>;
+  hyper h3[10];
+
+  unsigned hyper uh0;
+  unsigned hyper uh1<>;
+  unsigned hyper uh2<10>;
+  unsigned hyper uh3[10];
+
+  float f0;
+  float f1<>;
+  float f2<10>;
+  float f3[10];
+
+  double d0;
+  double d1<>;
+  double d2<10>;
+  double d3[10];
+
+  quadruple q0;
+  quadruple q1<>;
+  quadruple q2<10>;
+  quadruple q3[10];
+
+  bool b0;
+  bool b1<>;
+  bool b2<10>;
+  bool b3[10];
+};

@@ -1,0 +1,342 @@
+( [ Left
+      (TypeDefStruct
+         (Identifier "S")
+         (DeclarationSingle TypeInt (Identifier "i0") :|
+            [ DeclarationArrayVarLen TypeInt (Identifier "i1") Nothing
+            , DeclarationArrayVarLen
+                TypeInt (Identifier "i2") (Just (Left (DecConstant 10)))
+            , DeclarationArrayFixLen
+                TypeInt (Identifier "i3") (Left (DecConstant 10))
+            , DeclarationSingle TypeUnsignedInt (Identifier "ui0")
+            , DeclarationArrayVarLen TypeUnsignedInt (Identifier "ui1") Nothing
+            , DeclarationArrayVarLen
+                TypeUnsignedInt (Identifier "ui2") (Just (Left (DecConstant 10)))
+            , DeclarationArrayFixLen
+                TypeUnsignedInt (Identifier "ui3") (Left (DecConstant 10))
+            , DeclarationSingle TypeHyper (Identifier "h0")
+            , DeclarationArrayVarLen TypeHyper (Identifier "h1") Nothing
+            , DeclarationArrayVarLen
+                TypeHyper (Identifier "h2") (Just (Left (DecConstant 10)))
+            , DeclarationArrayFixLen
+                TypeHyper (Identifier "h3") (Left (DecConstant 10))
+            , DeclarationSingle TypeUnsignedHyper (Identifier "uh0")
+            , DeclarationArrayVarLen
+                TypeUnsignedHyper (Identifier "uh1") Nothing
+            , DeclarationArrayVarLen
+                TypeUnsignedHyper (Identifier "uh2") (Just (Left (DecConstant 10)))
+            , DeclarationArrayFixLen
+                TypeUnsignedHyper (Identifier "uh3") (Left (DecConstant 10))
+            , DeclarationSingle TypeFloat (Identifier "f0")
+            , DeclarationArrayVarLen TypeFloat (Identifier "f1") Nothing
+            , DeclarationArrayVarLen
+                TypeFloat (Identifier "f2") (Just (Left (DecConstant 10)))
+            , DeclarationArrayFixLen
+                TypeFloat (Identifier "f3") (Left (DecConstant 10))
+            , DeclarationSingle TypeDouble (Identifier "d0")
+            , DeclarationArrayVarLen TypeDouble (Identifier "d1") Nothing
+            , DeclarationArrayVarLen
+                TypeDouble (Identifier "d2") (Just (Left (DecConstant 10)))
+            , DeclarationArrayFixLen
+                TypeDouble (Identifier "d3") (Left (DecConstant 10))
+            , DeclarationSingle TypeQuadruple (Identifier "q0")
+            , DeclarationArrayVarLen TypeQuadruple (Identifier "q1") Nothing
+            , DeclarationArrayVarLen
+                TypeQuadruple (Identifier "q2") (Just (Left (DecConstant 10)))
+            , DeclarationArrayFixLen
+                TypeQuadruple (Identifier "q3") (Left (DecConstant 10))
+            , DeclarationSingle TypeBool (Identifier "b0")
+            , DeclarationArrayVarLen TypeBool (Identifier "b1") Nothing
+            , DeclarationArrayVarLen
+                TypeBool (Identifier "b2") (Just (Left (DecConstant 10)))
+            , DeclarationArrayFixLen
+                TypeBool (Identifier "b3") (Left (DecConstant 10))
+            ]))
+  ]
+, ParserState
+    []
+    [ ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 1
+          , sourceColumn = Pos 1
+          }
+      , ( Identifier "S"
+        , TypeStruct
+            (DeclarationSingle TypeInt (Identifier "i0") :|
+               [ DeclarationArrayVarLen TypeInt (Identifier "i1") Nothing
+               , DeclarationArrayVarLen
+                   TypeInt (Identifier "i2") (Just (Left (DecConstant 10)))
+               , DeclarationArrayFixLen
+                   TypeInt (Identifier "i3") (Left (DecConstant 10))
+               , DeclarationSingle TypeUnsignedInt (Identifier "ui0")
+               , DeclarationArrayVarLen TypeUnsignedInt (Identifier "ui1") Nothing
+               , DeclarationArrayVarLen
+                   TypeUnsignedInt (Identifier "ui2") (Just (Left (DecConstant 10)))
+               , DeclarationArrayFixLen
+                   TypeUnsignedInt (Identifier "ui3") (Left (DecConstant 10))
+               , DeclarationSingle TypeHyper (Identifier "h0")
+               , DeclarationArrayVarLen TypeHyper (Identifier "h1") Nothing
+               , DeclarationArrayVarLen
+                   TypeHyper (Identifier "h2") (Just (Left (DecConstant 10)))
+               , DeclarationArrayFixLen
+                   TypeHyper (Identifier "h3") (Left (DecConstant 10))
+               , DeclarationSingle TypeUnsignedHyper (Identifier "uh0")
+               , DeclarationArrayVarLen
+                   TypeUnsignedHyper (Identifier "uh1") Nothing
+               , DeclarationArrayVarLen
+                   TypeUnsignedHyper (Identifier "uh2") (Just (Left (DecConstant 10)))
+               , DeclarationArrayFixLen
+                   TypeUnsignedHyper (Identifier "uh3") (Left (DecConstant 10))
+               , DeclarationSingle TypeFloat (Identifier "f0")
+               , DeclarationArrayVarLen TypeFloat (Identifier "f1") Nothing
+               , DeclarationArrayVarLen
+                   TypeFloat (Identifier "f2") (Just (Left (DecConstant 10)))
+               , DeclarationArrayFixLen
+                   TypeFloat (Identifier "f3") (Left (DecConstant 10))
+               , DeclarationSingle TypeDouble (Identifier "d0")
+               , DeclarationArrayVarLen TypeDouble (Identifier "d1") Nothing
+               , DeclarationArrayVarLen
+                   TypeDouble (Identifier "d2") (Just (Left (DecConstant 10)))
+               , DeclarationArrayFixLen
+                   TypeDouble (Identifier "d3") (Left (DecConstant 10))
+               , DeclarationSingle TypeQuadruple (Identifier "q0")
+               , DeclarationArrayVarLen TypeQuadruple (Identifier "q1") Nothing
+               , DeclarationArrayVarLen
+                   TypeQuadruple (Identifier "q2") (Just (Left (DecConstant 10)))
+               , DeclarationArrayFixLen
+                   TypeQuadruple (Identifier "q3") (Left (DecConstant 10))
+               , DeclarationSingle TypeBool (Identifier "b0")
+               , DeclarationArrayVarLen TypeBool (Identifier "b1") Nothing
+               , DeclarationArrayVarLen
+                   TypeBool (Identifier "b2") (Just (Left (DecConstant 10)))
+               , DeclarationArrayFixLen
+                   TypeBool (Identifier "b3") (Left (DecConstant 10))
+               ])
+        )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 41
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "b3" , TypeBool )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 40
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "b2" , TypeBool )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 39
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "b1" , TypeBool )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 38
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "b0" , TypeBool )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 36
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "q3" , TypeQuadruple )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 35
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "q2" , TypeQuadruple )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 34
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "q1" , TypeQuadruple )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 33
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "q0" , TypeQuadruple )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 31
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "d3" , TypeDouble )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 30
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "d2" , TypeDouble )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 29
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "d1" , TypeDouble )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 28
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "d0" , TypeDouble )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 26
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "f3" , TypeFloat )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 25
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "f2" , TypeFloat )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 24
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "f1" , TypeFloat )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 23
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "f0" , TypeFloat )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 21
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "uh3" , TypeUnsignedHyper )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 20
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "uh2" , TypeUnsignedHyper )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 19
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "uh1" , TypeUnsignedHyper )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 18
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "uh0" , TypeUnsignedHyper )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 16
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "h3" , TypeHyper )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 15
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "h2" , TypeHyper )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 14
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "h1" , TypeHyper )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 13
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "h0" , TypeHyper )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 11
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "ui3" , TypeUnsignedInt )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 10
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "ui2" , TypeUnsignedInt )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 9
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "ui1" , TypeUnsignedInt )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 8
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "ui0" , TypeUnsignedInt )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 6
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "i3" , TypeInt )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 5
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "i2" , TypeInt )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 4
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "i1" , TypeInt )
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/struct.xdr"
+          , sourceLine = Pos 3
+          , sourceColumn = Pos 3
+          }
+      , ( Identifier "i0" , TypeInt )
+      )
+    ]
+    (fromList [] :| [ fromList [] ])
+)

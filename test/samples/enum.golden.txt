@@ -8,20 +8,19 @@
   ]
 , ParserState
     []
-    (fromList
-       [ ( Identifier "filekind"
-         , ( SourcePos
-               { sourceName = "test/samples/enum.xdr"
-               , sourceLine = Pos 4
-               , sourceColumn = Pos 1
-               }
-           , TypeEnum
-               (( Identifier "TEXT" , Left (DecConstant 0) ) :|
-                  [ ( Identifier "DATA" , Left (DecConstant 1) )
-                  , ( Identifier "EXEC" , Left (DecConstant 2) )
-                  ])
-           )
-         )
-       ] :|
-       [])
+    [ ( SourcePos
+          { sourceName = "test/samples/enum.xdr"
+          , sourceLine = Pos 4
+          , sourceColumn = Pos 1
+          }
+      , ( Identifier "filekind"
+        , TypeEnum
+            (( Identifier "TEXT" , Left (DecConstant 0) ) :|
+               [ ( Identifier "DATA" , Left (DecConstant 1) )
+               , ( Identifier "EXEC" , Left (DecConstant 2) )
+               ])
+        )
+      )
+    ]
+    (fromList [] :| [])
 )
